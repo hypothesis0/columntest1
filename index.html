@@ -1,74 +1,462 @@
+<!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Endless Roman Column</title>
-<link rel="stylesheet" href="style.css">
-<style>
-     
-     body {
-  background-color: #ffffff; /* Light gray background */
-  
-}
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Endless Roman Column</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        body {
+            background-color: #ffffff; /* Light gray background */
+        }
 
-   @keyframes floatAnimation {
+        @keyframes floatAnimation {
             0% { transform: translate(0, 0); }
             50% { transform: translate(0, -20px); }
             100% { transform: translate(0, 0); }
         }
 
-    #pageHeightDisplay {
-    position: fixed;
-    /* font: arial; */
-    bottom: 10px; /* Distance from the bottom of the viewport */
-    right: 10px; /* Distance from the right of the viewport */
-    background-color: white; /* Background color for visibility */
-    padding: 5px; /* Padding around the text */
-    border: 1px solid #ddd; /* Optional: adds a border */
-    z-index: 1001; /* Ensures it stays above other content */
-    opacity: 0.8; /* Optional: makes the background slightly transparent */
-    }
-
-  
-
-
+        #pageHeightDisplay {
+            position: fixed;
+            /* font: arial; */
+            bottom: 10px; /* Distance from the bottom of the viewport */
+            right: 10px; /* Distance from the right of the viewport */
+            background-color: white; /* Background color for visibility */
+            padding: 5px; /* Padding around the text */
+            border: 1px solid #ddd; /* Optional: adds a border */
+            z-index: 1001; /* Ensures it stays above other content */
+            opacity: 0.8; /* Optional: makes the background slightly transparent */
+        }
 
         #image-container img {
             position: absolute;
             transform: scale(4);
-            object-fit: contain;         /* Maintain aspect ratio while fitting within container */
-  display: block;              /* Prevents inline gaps */
-  margin: auto;      
-  opacity: 0; 
+            object-fit: contain;
+            /* Maintain aspect ratio while fitting within container */
+            display: block;
+            /* Prevents inline gaps */
+            margin: auto;
+            opacity: 0;
         }
-    .dynamic-image {  
-        /* column   */
-        left: 49%;
-        transform: translateX(1200%);
-        width: 4vw;
+
+        .dynamic-image {
+            /* column */
+            left: 49%;
+            transform: translateX(1200%);
+            width: 4vw;
+            display: block;
+            z-index: 5;
+        }
+
+        @media (max-width: 768px) {
+    .dynamic-image {
+        width: 10vw;        /* ← Change this number for mobile width! */
+        transform: translateX(480%);  /* ← Change scale(2) for mobile size! */
         display: block;
         z-index: 5;
-
     }
+}
 
-   
-</style>
+    </style>
 </head>
 <body>
-   
-       
-      
-        <!-- Add more images as needed -->
+
+
+    <!-- Add more images as needed -->
     </div>
 
-    
-   
-
-
     <script src="toomanysketch.js"></script>
-
     <a id="pageHeightDisplay" target="_blank">column height: 0 cm</a>
+    
+    <script>
+        // Auto-scroll variables
+        let autoScrollEnabled = false;
+        let autoScrollInterval = null;
+        const AUTO_SCROLL_SPEED_MIN = 0.8;
+        const AUTO_SCROLL_SPEED_MAX = 2.5;
+        const AUTO_SCROLL_PAUSE_CHANCE = 0.015;
+        const AUTO_SCROLL_PAUSE_DURATION = { min: 200, max: 800 };
 
-<script src="sketch.js"></script>
+        // Detect mobile device
+        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
+                         (navigator.maxTouchPoints && navigator.maxTouchPoints > 2);
+
+        // Background music setup
+        let audioPlayer = null;
+        let dialogShown = false;
+
+        document.addEventListener("DOMContentLoaded", () => {
+            let lastMilestone = 0;
+            
+            // Initialize background music
+            initBackgroundMusic();
+
+            // Add initial images
+            for (let i = 0; i < (isMobile ? 8 : 10); i++) {
+                addImage();
+                addImageTop();
+            }
+
+            // Setup controls first
+            setupControls();
+
+            // Setup auto-scroll with a small delay to ensure page is ready
+            setTimeout(() => {
+                setupAutoScroll();
+                // Force start auto-scroll
+                startAutoScroll();
+            }, 500);
+
+            // Original scroll listener - modified to not interfere with auto-scroll
+            window.addEventListener("scroll", () => {
+                // Only update height and add images, don't interfere with auto-scroll
+                const scrollBottom = window.innerHeight + window.scrollY >= document.body.offsetHeight - 50;
+                const scrollTop = window.scrollY <= 50;
+
+                if (scrollBottom) {
+                    addImage();
+                } else if (scrollTop) {
+                    addImageTop();
+                }
+
+                // Keep your original dialog at 185000
+                if (window.scrollY >= 185000 && !dialogShown) {
+                    // Don't stop auto-scroll for dialog
+                    
+                    Confirm.open({
+                        title: '🤔',
+                        message: 'If we have to work and build, can we work on the build of love?',
+                        okText: 'Yes',
+                        cancelText: 'No',
+                        onok: () => {
+                            redirectToNextPage();
+                        },
+                        oncancel: () => {
+                            closeConfirm();
+                            dialogShown = true;
+                            // Auto-scroll continues even after dialog
+                        }
+                    });
+
+                    dialogShown = true;
+                }
+
+                updatePageHeightDisplay();
+            }, { passive: true });
+
+            function addImage() {
+                const image = createImage();
+                document.body.appendChild(image);
+            }
+
+            function addImageTop() {
+                const image = createImage();
+                image.onload = () => {
+                    window.scrollTo(0, window.scrollY + image.height);
+                };
+                document.body.insertBefore(image, document.body.firstChild);
+            }
+
+            function createImage() {
+                const img = document.createElement("img");
+                img.src = "column3.png";
+                img.alt = "Dynamic Image";
+                img.classList.add("dynamic-image");
+                
+                // Make column images 4x larger on mobile
+                if (isMobile) {
+                    img.style.transform = 'scale(4)';
+                    img.style.transformOrigin = 'center';
+                }
+                
+                return img;
+            }
+
+            function updatePageHeightDisplay() {
+                const pixels = window.scrollY + window.innerHeight;
+                const centimeters = (pixels / 96) * 2.54;
+                const pageHeightDisplay = document.getElementById("pageHeightDisplay");
+                if (pageHeightDisplay) {
+                    pageHeightDisplay.textContent = `Column height: ${centimeters.toFixed(2)} cm`;
+                }
+            }
+        });
+
+        function initBackgroundMusic() {
+            audioPlayer = document.createElement('audio');
+            audioPlayer.src = 'music/Goldberg Variations_ BWV 988_ Aria-Johann Sebastian Bach.mp3';
+            audioPlayer.loop = true;
+            audioPlayer.volume = isMobile ? 0.3 : 0.5;
+            audioPlayer.muted = false;
+            
+            const events = isMobile ? 
+                ['touchstart', 'touchend', 'click'] : 
+                ['click', 'touchstart'];
+            
+            events.forEach(event => {
+                document.body.addEventListener(event, attemptAutoplay, { once: true });
+            });
+            
+            window.addEventListener('scroll', attemptAutoplay, { once: true });
+            attemptAutoplay();
+            
+            function attemptAutoplay() {
+                const playPromise = audioPlayer.play();
+                
+                if (playPromise !== undefined) {
+                    playPromise.then(() => {
+                        console.log('Autoplay started successfully');
+                    }).catch(error => {
+                        console.log('Autoplay prevented by browser policy:', error);
+                        
+                        const clickHandler = () => {
+                            audioPlayer.play().catch(e => console.log('Still cannot play audio'));
+                            document.body.removeEventListener('click', clickHandler);
+                            document.body.removeEventListener('touchstart', clickHandler);
+                        };
+                        
+                        document.body.addEventListener('click', clickHandler);
+                        if (isMobile) {
+                            document.body.addEventListener('touchstart', clickHandler);
+                        }
+                    });
+                }
+            }
+            
+            document.body.appendChild(audioPlayer);
+        }
+
+        // Auto-scroll functions
+        function setupAutoScroll() {
+            console.log('Setting up auto-scroll...');
+            // No interaction listeners needed - always scroll
+            console.log('Auto-scroll setup complete - will run continuously');
+        }
+
+        function onUserInteraction(event) {
+            // Only count manual user interactions, not programmatic scrolling
+            if (event.type === 'scroll') {
+                // Don't count scroll events as user interaction when auto-scrolling
+                if (autoScrollEnabled) {
+                    return;
+                }
+            }
+            
+            lastUserScrollTime = Date.now();
+            console.log('User interaction detected:', event.type);
+            
+            if (autoScrollEnabled) {
+                stopAutoScroll();
+                console.log('Auto-scroll paused due to user interaction');
+                
+                setTimeout(() => {
+                    const timeSinceLastInteraction = Date.now() - lastUserScrollTime;
+                    if (timeSinceLastInteraction >= AUTO_SCROLL_DELAY) {
+                        console.log('Resuming auto-scroll after user interaction pause');
+                        startAutoScroll();
+                    }
+                }, AUTO_SCROLL_DELAY);
+            }
+        }
+
+        function startAutoScroll() {
+            if (autoScrollInterval) {
+                console.log('Auto-scroll already running');
+                return;
+            }
+            
+            autoScrollEnabled = true;
+            updateAutoScrollIndicator();
+            console.log('Auto-scroll STARTED! Will run continuously forever...');
+            
+            let currentSpeed = AUTO_SCROLL_SPEED_MIN;
+            let speedDirection = 1;
+            let isPaused = false;
+            let scrollCount = 0;
+            
+            autoScrollInterval = setInterval(() => {
+                if (isPaused) {
+                    return;
+                }
+                
+                const currentScrollY = window.scrollY;
+                const maxScroll = document.documentElement.scrollHeight - window.innerHeight;
+                
+                // Don't stop at bottom - just keep adding content
+                if (currentScrollY >= maxScroll - 50) {
+                    // Add more images to keep going
+                    for (let i = 0; i < 5; i++) {
+                        addImage();
+                    }
+                }
+                
+                // Vary scroll speed naturally
+                currentSpeed += (Math.random() - 0.5) * 0.2 * speedDirection;
+                currentSpeed = Math.max(AUTO_SCROLL_SPEED_MIN, Math.min(AUTO_SCROLL_SPEED_MAX, currentSpeed));
+                
+                if (Math.random() < 0.1) {
+                    speedDirection *= -1;
+                }
+                
+                // Always scroll the page
+                window.scrollBy(0, currentSpeed);
+                scrollCount++;
+                
+                // Log progress every 5 seconds for debugging
+                if (scrollCount % 300 === 0) {
+                    console.log(`Auto-scroll progress: ${currentScrollY}px, speed: ${currentSpeed.toFixed(2)} - CONTINUOUS MODE`);
+                }
+                
+                // Occasional pauses for natural feel
+                if (Math.random() < AUTO_SCROLL_PAUSE_CHANCE) {
+                    isPaused = true;
+                    const pauseDuration = Math.random() * 
+                        (AUTO_SCROLL_PAUSE_DURATION.max - AUTO_SCROLL_PAUSE_DURATION.min) + 
+                        AUTO_SCROLL_PAUSE_DURATION.min;
+                    
+                    setTimeout(() => {
+                        isPaused = false;
+                    }, pauseDuration);
+                }
+                
+            }, 16); // ~60fps
+        }
+
+        function stopAutoScroll() {
+            if (autoScrollInterval) {
+                clearInterval(autoScrollInterval);
+                autoScrollInterval = null;
+                console.log('Auto-scroll stopped');
+            }
+            autoScrollEnabled = false;
+            updateAutoScrollIndicator();
+        }
+
+        function toggleAutoScroll() {
+            if (autoScrollEnabled) {
+                stopAutoScroll();
+                console.log('Auto-scroll manually stopped');
+            } else {
+                startAutoScroll();
+                console.log('Auto-scroll manually started');
+            }
+        }
+
+        function updateAutoScrollIndicator() {
+            // No indicator to update anymore
+        }
+
+        function setupControls() {
+            // Only keyboard controls remain
+            document.addEventListener('keydown', (event) => {
+                if (event.key.toLowerCase() === 'a' && !event.ctrlKey && !event.altKey) {
+                    toggleAutoScroll();
+                }
+                
+                if (event.key.toLowerCase() === 's' && !event.ctrlKey && !event.altKey) {
+                    stopAutoScroll();
+                }
+                
+                if (event.code === 'Space' && !event.ctrlKey && !event.altKey) {
+                    event.preventDefault();
+                    toggleAutoScroll();
+                }
+            });
+        }
+
+
+
+        // Your original Confirm dialog
+        const Confirm = {
+            open(options) {
+                options = Object.assign({
+                    title: '',
+                    message: '',
+                    okText: 'OK',
+                    cancelText: 'Cancel',
+                    onok: () => {},
+                    oncancel: () => {}
+                }, options);
+
+                const html = `
+                    <div class="confirm">
+                        <div class="confirm__window" style="${isMobile ? 'width: 90vw; max-width: 400px; margin: 20px;' : ''}">
+                            <div class="confirm__titlebar">
+                                <span class="confirm__title">${options.title}</span>
+                                <button class="confirm__close" style="${isMobile ? 'font-size: 28px; padding: 10px; min-height: 44px; min-width: 44px;' : ''}">&times;</button>
+                            </div>
+                            <div class="confirm__content" style="${isMobile ? 'font-size: 18px; padding: 20px;' : ''}">${options.message}</div>
+                            <div class="confirm__buttons">
+                                <button class="confirm__button confirm__button--ok confirm__button--fill" style="${isMobile ? 'min-height: 44px; font-size: 18px; padding: 12px 20px;' : ''}">${options.okText}</button>
+                                <button class="confirm__button confirm__button--cancel" style="${isMobile ? 'min-height: 44px; font-size: 18px; padding: 12px 20px;' : ''}">${options.cancelText}</button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+
+                const template = document.createElement('template');
+                template.innerHTML = html.trim();
+                const confirmEl = template.content.firstChild;
+
+                const okButton = confirmEl.querySelector('.confirm__button--ok');
+                const cancelButton = confirmEl.querySelector('.confirm__button--cancel');
+                const closeButton = confirmEl.querySelector('.confirm__close');
+
+                okButton.addEventListener('click', () => {
+                    options.onok();
+                    this._close(confirmEl);
+                });
+
+                cancelButton.addEventListener('click', () => {
+                    options.oncancel();
+                    this._close(confirmEl);
+                });
+
+                closeButton.addEventListener('click', () => {
+                    options.oncancel();
+                    this._close(confirmEl);
+                });
+
+                if (isMobile) {
+                    okButton.addEventListener('touchend', (e) => {
+                        e.preventDefault();
+                        options.onok();
+                        this._close(confirmEl);
+                    });
+
+                    cancelButton.addEventListener('touchend', (e) => {
+                        e.preventDefault();
+                        options.oncancel();
+                        this._close(confirmEl);
+                    });
+
+                    closeButton.addEventListener('touchend', (e) => {
+                        e.preventDefault();
+                        options.oncancel();
+                        this._close(confirmEl);
+                    });
+                }
+
+                document.body.appendChild(confirmEl);
+            },
+            _close(confirmEl) {
+                confirmEl.classList.add('confirm--close');
+                confirmEl.addEventListener('animationend', () => {
+                    document.body.removeChild(confirmEl);
+                });
+            }
+        };
+
+        function closeConfirm() {
+            const confirm = document.querySelector(".confirm");
+            if (confirm) {
+                confirm.remove();
+            }
+        }
+
+        function redirectToNextPage() {
+            window.location.href = "indexheart.html";
+        }
+    </script>
 </body>
 </html>
