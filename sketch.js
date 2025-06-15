@@ -1,38 +1,32 @@
-// Complete Mobile-optimized version of sketch.js with auto-scroll
-// Fixed version with proper mobile support and automatic scrolling
+// Complete Mobile-optimized version of sketch.js
+// Added touch support, mobile popup handling, and responsive features
 
 // Detect if we're on a mobile device
 const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
                  (navigator.maxTouchPoints && navigator.maxTouchPoints > 2);
 
-// Auto-scroll variables for mobile
+// Auto-scroll variables
 let autoScrollEnabled = false;
 let autoScrollInterval = null;
-let autoLoadInterval = null;
-let lastUserInteraction = 0;
-const AUTO_SCROLL_DELAY = 3000; // 3 seconds
-const AUTO_LOAD_INTERVAL = 2000; // Add new images every 2 seconds
+let lastUserScrollTime = 0;
+const AUTO_SCROLL_DELAY = 3000; // 3 seconds of no user interaction before auto-scroll starts
 
-console.log("Mobile detected:", isMobile);
-
-// Initialize popup system after page load
+// Initialize popup system after page load with better mobile load handling
 window.addEventListener('load', function() {
-  console.log("Page loaded, initializing...");
-  
   // Add styles
   addPopupStyles();
 
-  // Set up observers
+  // Set up observers with mobile-specific settings
   setupImageObserver();
   setupTextObserver();
 
-  // Set up scroll handler
+  // Set up scroll handler for popup system with mobile optimization
   window.addEventListener('scroll', handlePopupScroll, { passive: true });
 
   // Store initial scroll position
   lastScrollPosition = window.scrollY;
 
-  // Wait for content to load
+  // Mobile-optimized: Wait longer for mobile devices to ensure content loads
   const initialDelay = isMobile ? 2500 : 1500;
   setTimeout(() => {
     const currentScrollY = window.scrollY;
@@ -53,199 +47,169 @@ window.addEventListener('load', function() {
     });
   }, initialDelay);
   
-  // Fullscreen detection
+  // Mobile fullscreen detection
   setTimeout(function() {
     isInFullscreen = !!(document.fullscreenElement || document.webkitFullscreenElement || 
                       document.mozFullScreenElement || document.msFullscreenElement);
     
     if (isInFullscreen) {
-      console.log("Initial fullscreen detected");
+      console.log("Detected initial fullscreen state, triggering popup check");
       forceTriggerPopupsAtCurrentPosition();
     }
   }, 500);
   
-  // Desktop keyboard shortcuts
+  // Setup keyboard shortcuts for testing (desktop only)
   if (!isMobile) {
     document.addEventListener('keydown', (event) => {
-      if (event.key === 'Escape' && currentTextPopup) {
-        closeTextPopup();
+      if (event.key === 'Escape') {
+        if (currentTextPopup) {
+          closeTextPopup();
+        }
       }
+      
       if (event.key === 'r' || event.key === 'R') {
         resetAllPopups();
       }
     });
   }
 
-  // Mobile-specific setup
+  // Mobile-specific: Add touch event listeners for better interaction
   if (isMobile) {
-    console.log("Setting up mobile features...");
-    setupMobileFeatures();
+    setupMobileTouchHandlers();
+    setupAutoScroll();
   }
 });
 
-// Mobile features setup
-function setupMobileFeatures() {
-  // Touch handlers
-  setupMobileTouchHandlers();
-  
-  // Auto-scroll setup
-  console.log("Starting auto-scroll setup...");
-  setTimeout(() => {
-    console.log("Initiating auto-scroll");
-    startAutoScroll();
-  }, AUTO_SCROLL_DELAY);
-  
-  // Auto-load setup - continuously add images
-  console.log("Starting auto-load setup...");
-  setTimeout(() => {
-    console.log("Initiating auto-load");
-    startAutoLoad();
-  }, 1000); // Start auto-loading after 1 second
-}
-
-// Mobile touch handlers
+// Mobile-specific touch handlers
 function setupMobileTouchHandlers() {
-  console.log("Setting up touch handlers");
-  
-  // Track user interactions
-  ['touchstart', 'touchmove', 'touchend', 'scroll'].forEach(eventType => {
-    document.addEventListener(eventType, () => {
-      lastUserInteraction = Date.now();
-      if (autoScrollEnabled) {
-        console.log("User interaction detected, pausing auto-scroll");
-        pauseAutoScroll();
-      }
-    }, { passive: true });
-  });
+  let lastTouchY = 0;
+  let touchStartTime = 0;
 
-  // Handle popup closing with touch
+  document.addEventListener('touchstart', function(e) {
+    lastTouchY = e.touches[0].clientY;
+    touchStartTime = Date.now();
+    
+    // User interaction detected - stop auto scroll temporarily
+    onUserInteraction();
+  }, { passive: true });
+
+  document.addEventListener('touchmove', function(e) {
+    // Prevent default only when necessary to avoid scroll issues
+    if (isScrollDisabled) {
+      e.preventDefault();
+    }
+    
+    // User interaction detected - stop auto scroll temporarily
+    onUserInteraction();
+  }, { passive: false });
+
   document.addEventListener('touchend', function(e) {
-    if (currentTextPopup) {
+    const touchEndTime = Date.now();
+    const touchDuration = touchEndTime - touchStartTime;
+    
+    // Handle quick taps for closing popups
+    if (touchDuration < 200 && currentTextPopup) {
       const target = e.target;
       const overlay = target.closest('.text-popup-overlay');
       if (overlay && target === overlay) {
         closeTextPopup();
       }
     }
+    
+    // User interaction detected - stop auto scroll temporarily
+    onUserInteraction();
   }, { passive: true });
 }
 
-// Auto-scroll functions
-function startAutoScroll() {
-  if (autoScrollInterval || !isMobile) {
-    console.log("Auto-scroll already running or not mobile");
-    return;
-  }
+// Auto-scroll setup for mobile
+function setupAutoScroll() {
+  // Listen for scroll events to detect user interaction
+  window.addEventListener('scroll', function() {
+    onUserInteraction();
+  }, { passive: true });
   
-  console.log("Starting auto-scroll");
-  autoScrollEnabled = true;
-  
-  autoScrollInterval = setInterval(() => {
-    // Check if user interacted recently
-    const timeSinceInteraction = Date.now() - lastUserInteraction;
-    if (timeSinceInteraction < AUTO_SCROLL_DELAY) {
-      return; // Don't scroll if user interacted recently
-    }
-    
-    // Don't scroll if popup is open
-    if (currentTextPopup || isScrollDisabled) {
-      return;
-    }
-    
-    // Check if we've reached the bottom
-    const maxScroll = document.documentElement.scrollHeight - window.innerHeight;
-    if (window.scrollY >= maxScroll - 10) {
-      console.log("Reached bottom, stopping auto-scroll");
-      stopAutoScroll();
-      return;
-    }
-    
-    // Human-like scrolling speed
-    const scrollSpeed = Math.random() * 2 + 1; // 1-3 pixels
-    window.scrollBy(0, scrollSpeed);
-    
-    // Occasionally pause for realism
-    if (Math.random() < 0.02) { // 2% chance
-      setTimeout(() => {
-        // Brief pause
-      }, Math.random() * 300 + 100);
-    }
-    
-  }, 16); // ~60fps
+  // Start auto-scroll after initial delay
+  setTimeout(() => {
+    startAutoScroll();
+  }, AUTO_SCROLL_DELAY);
 }
 
-function pauseAutoScroll() {
-  if (autoScrollInterval) {
-    clearInterval(autoScrollInterval);
-    autoScrollInterval = null;
-    autoScrollEnabled = false;
+// Handle user interaction - temporarily stop auto scroll
+function onUserInteraction() {
+  lastUserScrollTime = Date.now();
+  
+  if (autoScrollEnabled) {
+    stopAutoScroll();
     
-    // Resume after delay
+    // Restart auto scroll after delay
     setTimeout(() => {
-      const timeSinceInteraction = Date.now() - lastUserInteraction;
-      if (timeSinceInteraction >= AUTO_SCROLL_DELAY && !currentTextPopup) {
-        console.log("Resuming auto-scroll after pause");
+      const timeSinceLastInteraction = Date.now() - lastUserScrollTime;
+      if (timeSinceLastInteraction >= AUTO_SCROLL_DELAY) {
         startAutoScroll();
       }
     }, AUTO_SCROLL_DELAY);
   }
 }
 
+// Start automatic scrolling with human-like speed
+function startAutoScroll() {
+  if (autoScrollInterval || isScrollDisabled) return;
+  
+  autoScrollEnabled = true;
+  
+  autoScrollInterval = setInterval(() => {
+    // Check if user has interacted recently
+    const timeSinceLastInteraction = Date.now() - lastUserScrollTime;
+    if (timeSinceLastInteraction < AUTO_SCROLL_DELAY) {
+      return; // Don't auto scroll if user interacted recently
+    }
+    
+    // Don't auto scroll if popup is open
+    if (currentTextPopup || isScrollDisabled) {
+      return;
+    }
+    
+    // Human-like scrolling speed: 1-3 pixels per frame, with some randomness
+    const scrollSpeed = Math.random() * 2 + 1; // 1-3 pixels
+    const currentScrollY = window.scrollY;
+    const maxScroll = document.documentElement.scrollHeight - window.innerHeight;
+    
+    // Stop auto scroll if we've reached the bottom
+    if (currentScrollY >= maxScroll - 10) {
+      stopAutoScroll();
+      return;
+    }
+    
+    // Scroll down smoothly
+    window.scrollBy({
+      top: scrollSpeed,
+      behavior: 'auto' // Don't use 'smooth' for more natural feel
+    });
+    
+    // Occasionally pause for more human-like behavior
+    if (Math.random() < 0.02) { // 2% chance to pause
+      setTimeout(() => {
+        // Brief pause (100-500ms)
+        const pauseDuration = Math.random() * 400 + 100;
+        setTimeout(() => {
+          // Continue scrolling after pause
+        }, pauseDuration);
+      }, 0);
+    }
+    
+  }, 16); // ~60fps for smooth scrolling
+}
+
+// Stop automatic scrolling
 function stopAutoScroll() {
   if (autoScrollInterval) {
-    console.log("Stopping auto-scroll");
     clearInterval(autoScrollInterval);
     autoScrollInterval = null;
   }
   autoScrollEnabled = false;
 }
 
-// Auto-loading functions for infinite content
-function startAutoLoad() {
-  if (autoLoadInterval) {
-    console.log("Auto-load already running");
-    return;
-  }
-  
-  console.log("Starting auto-load");
-  
-  autoLoadInterval = setInterval(() => {
-    // Always add images regardless of scroll position or user interaction
-    // This creates truly endless content
-    
-    // Add images at the bottom more frequently
-    addImage();
-    
-    // Occasionally add at the top too for even more endless feel
-    if (Math.random() < 0.3) { // 30% chance
-      addImageTop();
-    }
-    
-    // Add multiple images sometimes for faster loading
-    if (Math.random() < 0.2) { // 20% chance to add extra
-      addImage();
-    }
-    
-    console.log("Auto-loaded new images, page height:", document.body.offsetHeight);
-    
-  }, AUTO_LOAD_INTERVAL);
-}
-
-function stopAutoLoad() {
-  if (autoLoadInterval) {
-    console.log("Stopping auto-load");
-    clearInterval(autoLoadInterval);
-    autoLoadInterval = null;
-  }
-}
-
-function pauseAutoLoad() {
-  // Auto-load continues even during user interaction
-  // This ensures the page is always growing
-  console.log("Auto-load continues during interaction");
-}
-
-// Reset all popups
+// Function to reset all popups (mobile-optimized)
 function resetAllPopups() {
   if (currentTextPopup) {
     closeTextPopup();
@@ -264,15 +228,51 @@ function resetAllPopups() {
   lastMilestone = 0;
   
   setTimeout(() => {
-    checkFastScrolling(window.scrollY);
+    const currentScrollY = window.scrollY;
+    checkFastScrolling(currentScrollY);
   }, 100);
 }
 
-// Global constants
-const SCROLL_THROTTLE = isMobile ? 150 : 100;
+// Mobile-optimized reset button
+function addResetButton() {
+  const resetBtn = document.createElement("button");
+  resetBtn.textContent = "Reset";
+  resetBtn.style.position = "fixed";
+  resetBtn.style.left = "10px";
+  resetBtn.style.top = "10px";
+  resetBtn.style.zIndex = "1001";
+  
+  // Mobile-optimized button styling
+  if (isMobile) {
+    resetBtn.style.padding = "12px 16px";
+    resetBtn.style.fontSize = "16px";
+    resetBtn.style.minHeight = "44px"; // iOS touch target minimum
+    resetBtn.style.minWidth = "44px";
+  } else {
+    resetBtn.style.padding = "8px 12px";
+    resetBtn.style.fontSize = "14px";
+  }
+  
+  resetBtn.style.background = "white";
+  resetBtn.style.border = "1px solid black";
+  resetBtn.style.fontFamily = "'Times New Roman', Times, serif";
+  resetBtn.style.cursor = "pointer";
+  resetBtn.style.boxShadow = "0 2px 5px rgba(0,0,0,0.2)";
+
+  resetBtn.addEventListener("click", resetAllPopups);
+  resetBtn.addEventListener("touchend", function(e) {
+    e.preventDefault();
+    resetAllPopups();
+  });
+  
+  document.body.appendChild(resetBtn);
+}
+
+// Global constants with mobile adjustments
+const SCROLL_THROTTLE = isMobile ? 150 : 100; // Longer throttle on mobile
 let lastScrollCheck = 0;
 
-// Image observer setup
+// Mobile-optimized image observer setup
 function setupImageObserver() {
   const imageObserver = new IntersectionObserver((entries) => {
     entries.forEach(entry => {
@@ -284,7 +284,7 @@ function setupImageObserver() {
           return;
         }
         
-        // Limit simultaneous popups on mobile
+        // On mobile, limit the number of simultaneous image popups
         const maxImagePopups = isMobile ? 2 : 5;
         if (Object.keys(openImagePopups).length >= maxImagePopups) {
           return;
@@ -295,8 +295,8 @@ function setupImageObserver() {
       }
     });
   }, {
-    threshold: isMobile ? 0.3 : 0.4,
-    rootMargin: isMobile ? "100px" : "0px"
+    threshold: isMobile ? 0.3 : 0.4, // Lower threshold on mobile
+    rootMargin: isMobile ? "100px" : "0px" // More margin on mobile
   });
   
   document.querySelectorAll('img').forEach(img => {
@@ -310,7 +310,7 @@ function setupImageObserver() {
   });
 }
 
-// Text observer setup
+// Mobile-optimized text observer setup
 function setupTextObserver() {
   const textObserver = new IntersectionObserver((entries) => {
     entries.forEach(entry => {
@@ -324,7 +324,7 @@ function setupTextObserver() {
               missedTextPopups.push(popupInfo);
             }
           } else {
-            console.log("Text popup triggered:", popupInfo.id);
+            console.log("Intersection observer triggering popup:", popupInfo.id);
             createTextPopup(popupInfo);
             shownTextPopups[popupInfo.id] = true;
           }
@@ -332,28 +332,30 @@ function setupTextObserver() {
       }
     });
   }, {
-    threshold: isMobile ? 0.2 : 0.3,
-    rootMargin: isMobile ? "200px 0px 200px 0px" : "0px 0px 0px 0px"
+    // Mobile-optimized thresholds
+    threshold: isMobile ? 0.2 : (isInFullscreen ? 0.1 : 0.3),
+    rootMargin: isMobile ? "200px 0px 200px 0px" : (isInFullscreen ? "300px 0px 300px 0px" : "0px 0px 0px 0px")
   });
   
   textPopups.forEach(item => {
     const element = document.getElementById(item.id);
     if (element) {
-      textObserver.observe(element);
+      textObserver.observe(item);
     }
   });
 }
 
-// Fast scrolling check
+// Mobile-optimized fast scrolling check
 function checkFastScrolling(currentScrollY) {
   const scrollSpeed = Math.abs(currentScrollY - lastScrollPosition);
+  // More sensitive to fast scrolling on mobile
   const isFastScrolling = scrollSpeed > (isMobile ? 300 : 400);
 
   if (isFastScrolling && !currentTextPopup && !isScrollDisabled) {
     textPopups.forEach(item => {
       if (!shownTextPopups[item.id]) {
         const scrollDirection = currentScrollY > lastScrollPosition ? 'down' : 'up';
-        const scrollRange = isMobile ? 150 : 100;
+        const scrollRange = isMobile ? 150 : 100; // Larger range on mobile
         
         if (scrollDirection === 'down' && 
             lastScrollPosition < (item.triggerPosition - scrollRange) && 
@@ -375,7 +377,7 @@ function checkFastScrolling(currentScrollY) {
   lastScrollPosition = currentScrollY;
 }
 
-// Scroll handler
+// Mobile-optimized scroll handler
 function handlePopupScroll() {
   if (isScrollDisabled) return;
 
@@ -402,13 +404,14 @@ function handlePopupScroll() {
   }
 }
 
-// Image popup creation
+// Mobile-optimized image popup creation
 function createImagePopup(imageElement) {
   if (!imageElement.id) {
     imageElement.id = 'img-' + Math.random().toString(36).substr(2, 9);
   }
   
   if (openImagePopups[imageElement.id]) return;
+  
   if (imageElement.width < 100 || imageElement.height < 100) return;
   
   const imageSrc = imageElement.src;
@@ -433,8 +436,9 @@ function createImagePopup(imageElement) {
     const viewportWidth = window.innerWidth;
     const viewportHeight = window.innerHeight;
     
-    const maxWidthPercent = isMobile ? 0.8 : 0.3;
-    const maxHeightPercent = isMobile ? 0.6 : 0.4;
+    // Mobile-specific sizing
+    const maxWidthPercent = isMobile ? 0.8 : 0.3; // Larger on mobile
+    const maxHeightPercent = isMobile ? 0.6 : 0.4; // Larger on mobile
     
     let popupWidth = imgWidth;
     let popupHeight = imgHeight;
@@ -463,13 +467,16 @@ function createImagePopup(imageElement) {
     popup.style.zIndex = '998';
     popup.style.overflow = 'hidden';
     
+    // Mobile-specific positioning
     if (isMobile) {
+      popup.style.cursor = 'default';
+      // Center on mobile for easier interaction
       popup.style.top = '50%';
       popup.style.left = '50%';
       popup.style.transform = 'translate(-50%, -50%)';
-      popup.style.borderRadius = '8px';
     } else {
       popup.style.cursor = 'move';
+      // Use original positioning logic for desktop
       const positions = [
         { top: '20px', right: '20px' },
         { top: '20px', left: '20px' },
@@ -486,6 +493,7 @@ function createImagePopup(imageElement) {
     }
     
     const contentDiv = document.createElement('div');
+    contentDiv.className = 'popup-content';
     contentDiv.style.width = '100%';
     contentDiv.style.height = '100%';
     contentDiv.style.display = 'flex';
@@ -500,6 +508,7 @@ function createImagePopup(imageElement) {
     img.style.display = 'block';
     
     const closeBtn = document.createElement('button');
+    closeBtn.className = 'popup-close';
     closeBtn.innerHTML = '&times;';
     closeBtn.style.position = 'absolute';
     closeBtn.style.top = '5px';
@@ -509,12 +518,15 @@ function createImagePopup(imageElement) {
     closeBtn.style.color = '#000';
     closeBtn.style.cursor = 'pointer';
     closeBtn.style.zIndex = '10';
-    closeBtn.style.fontSize = isMobile ? '28px' : '24px';
-    closeBtn.style.padding = isMobile ? '10px' : '5px';
     
+    // Mobile-optimized close button
     if (isMobile) {
+      closeBtn.style.fontSize = '28px';
+      closeBtn.style.padding = '10px';
       closeBtn.style.minHeight = '44px';
       closeBtn.style.minWidth = '44px';
+    } else {
+      closeBtn.style.fontSize = '24px';
     }
     
     contentDiv.appendChild(img);
@@ -533,6 +545,7 @@ function createImagePopup(imageElement) {
       closeImagePopup(imageElement.id);
     });
     
+    // Mobile touch events for close button
     if (isMobile) {
       closeBtn.addEventListener('touchend', function(e) {
         e.preventDefault();
@@ -540,6 +553,7 @@ function createImagePopup(imageElement) {
       });
     }
     
+    // Only make draggable on desktop
     if (!isMobile) {
       makeDraggable(popup);
     }
@@ -554,22 +568,24 @@ function createImagePopup(imageElement) {
   }
 }
 
-// Draggable functionality (desktop only)
+// Desktop-only draggable functionality
 function makeDraggable(element) {
-  if (isMobile) return;
+  if (isMobile) return; // Skip on mobile
   
   let pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
   
   element.onmousedown = dragMouseDown;
   
   function dragMouseDown(e) {
-    if (e.target.innerHTML === '&times;') return;
+    if (e.target.className === 'popup-close') return;
     
     e = e || window.event;
     e.preventDefault();
     
     pos3 = e.clientX;
     pos4 = e.clientY;
+    
+    element.style.zIndex = getHighestZIndex() + 1;
     
     document.onmouseup = closeDragElement;
     document.onmousemove = elementDrag;
@@ -598,9 +614,21 @@ function makeDraggable(element) {
     document.onmouseup = null;
     document.onmousemove = null;
   }
+  
+  function getHighestZIndex() {
+    let highest = 998;
+    const IMAGE_POPUP_MAX_Z_INDEX = 1500;
+    
+    document.querySelectorAll('.image-popup').forEach(popup => {
+      const zIndex = parseInt(window.getComputedStyle(popup).zIndex);
+      if (zIndex > highest) highest = zIndex;
+    });
+    
+    return Math.min(highest, IMAGE_POPUP_MAX_Z_INDEX);
+  }
 }
 
-// Close functions
+// Mobile-optimized text popup close
 function closeTextPopup() {
   if (currentTextPopup) {
     currentTextPopup.style.transition = 'opacity 0.3s ease-out';
@@ -672,29 +700,23 @@ function closeAllImagePopups() {
   }
 }
 
-// Track fullscreen
+// Track if we're in fullscreen mode
 let isInFullscreen = false;
 
-// Main DOM content loaded handler
 document.addEventListener("DOMContentLoaded", () => {
-  console.log("DOM loaded");
-  
   let dialogShown = false;
   let audioPlayer = null;
   let lastMilestone = 0;
   
-  // Fullscreen handlers
   document.addEventListener("fullscreenchange", handleFullscreenChange);
   document.addEventListener("webkitfullscreenchange", handleFullscreenChange);
   document.addEventListener("mozfullscreenchange", handleFullscreenChange);
   document.addEventListener("MSFullscreenChange", handleFullscreenChange);
   
-  // Initialize audio
+  // Mobile-optimized audio initialization
   initBackgroundMusic();
 
-  // Load initial images (fewer on mobile)
-  const initialImageCount = isMobile ? 8 : 10;
-  for (let i = 0; i < initialImageCount; i++) {
+  for (let i = 0; i < (isMobile ? 8 : 10); i++) { // Fewer initial images on mobile
     addImage();
     addImageTop();
   }
@@ -703,6 +725,7 @@ document.addEventListener("DOMContentLoaded", () => {
     document.documentElement.style.overflow = 'hidden';
     document.body.style.overflow = 'hidden';
     
+    // Additional mobile scroll prevention
     if (isMobile) {
       document.body.style.position = 'fixed';
       document.body.style.width = '100%';
@@ -725,9 +748,10 @@ document.addEventListener("DOMContentLoaded", () => {
     audioPlayer = document.createElement('audio');
     audioPlayer.src = 'music/Goldberg Variations_ BWV 988_ Aria-Johann Sebastian Bach.mp3';
     audioPlayer.loop = true;
-    audioPlayer.volume = isMobile ? 0.3 : 0.5;
+    audioPlayer.volume = isMobile ? 0.3 : 0.5; // Lower volume on mobile
     audioPlayer.muted = false;
     
+    // Mobile-friendly audio handling
     const events = isMobile ? 
       ['touchstart', 'touchend', 'click'] : 
       ['click', 'touchstart'];
@@ -744,12 +768,12 @@ document.addEventListener("DOMContentLoaded", () => {
       
       if (playPromise !== undefined) {
         playPromise.then(() => {
-          console.log('Audio started');
+          console.log('Autoplay started successfully');
         }).catch(error => {
-          console.log('Audio autoplay prevented:', error);
+          console.log('Autoplay prevented by browser policy:', error);
           
           const clickHandler = () => {
-            audioPlayer.play().catch(e => console.log('Audio still blocked'));
+            audioPlayer.play().catch(e => console.log('Still cannot play audio'));
             document.body.removeEventListener('click', clickHandler);
             document.body.removeEventListener('touchstart', clickHandler);
           };
@@ -765,25 +789,21 @@ document.addEventListener("DOMContentLoaded", () => {
     document.body.appendChild(audioPlayer);
   }
 
-  // Scroll event listener with auto-loading
+  // Mobile-optimized scroll event listener
   window.addEventListener("scroll", () => {
     const scrollBottom = window.innerHeight + window.scrollY >= document.body.offsetHeight - 50;
     const scrollTop = window.scrollY <= 50;
 
-    // Traditional loading when user scrolls (still keep this as backup)
     if (scrollBottom) {
       addImage();
-      // Add extra images when user reaches bottom
-      addImage();
-      console.log("User reached bottom, added extra images");
     } else if (scrollTop) {
       addImageTop();
     }
 
     if (window.scrollY >= 185000 && !dialogShown) {
+      // Stop auto scroll when dialog appears
       if (isMobile) {
         stopAutoScroll();
-        stopAutoLoad(); // Stop auto-loading when dialog appears
       }
       
       disableScroll();
@@ -802,10 +822,10 @@ document.addEventListener("DOMContentLoaded", () => {
           enableScroll();
           dialogShown = true;
           
+          // Resume auto scroll after dialog closes on mobile
           if (isMobile) {
             setTimeout(() => {
               startAutoScroll();
-              startAutoLoad(); // Resume auto-loading after dialog
             }, AUTO_SCROLL_DELAY);
           }
         }
@@ -836,10 +856,9 @@ document.addEventListener("DOMContentLoaded", () => {
     img.alt = "Dynamic Image";
     img.classList.add("dynamic-image");
     
-    // Make images 4x larger on mobile
+    // Make column images 4x larger on mobile
     if (isMobile) {
-      console.log("Creating mobile-sized image");
-      img.style.transform = 'scale(4)';
+      img.style.transform = 'scale(4)'; // 4x larger than current size
       img.style.transformOrigin = 'center';
     }
     
@@ -869,14 +888,13 @@ document.addEventListener("DOMContentLoaded", () => {
   }
   
   function showMilestonePopup(milestone, currentCm) {
-    console.log("Showing milestone popup:", milestone);
-    
     const overlay = document.createElement('div');
     overlay.className = 'text-popup-overlay';
     
     const popup = document.createElement('div');
     popup.className = 'text-popup';
     
+    // Mobile-optimized milestone popup sizing
     if (isMobile) {
       popup.style.width = '90vw';
       popup.style.height = '50vh';
@@ -914,6 +932,7 @@ document.addEventListener("DOMContentLoaded", () => {
     currentTextPopup = overlay;
     disablePopupScroll();
     
+    // Mobile-optimized button handling
     const button = popup.querySelector('.popup-button');
     button.addEventListener('click', closeMilestonePopup);
     if (isMobile) {
@@ -955,15 +974,15 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 });
 
-// Fullscreen handling
 function handleFullscreenChange() {
   const wasInFullscreen = isInFullscreen;
   isInFullscreen = !!(document.fullscreenElement || document.webkitFullscreenElement || 
                      document.mozFullScreenElement || document.msFullscreenElement);
   
-  console.log("Fullscreen change:", isInFullscreen ? "Entered" : "Exited");
+  console.log("Fullscreen change detected:", isInFullscreen ? "Entered fullscreen" : "Exited fullscreen");
   
   if (isInFullscreen !== wasInFullscreen) {
+    console.log("Fullscreen state changed, resetting popup tracking");
     forceResetAllPopups();
     setTimeout(forceTriggerPopupsAtCurrentPosition, 300);
   }
@@ -978,15 +997,15 @@ function forceResetAllPopups() {
   missedTextPopups = [];
   lastScrollPosition = window.scrollY;
   
-  console.log("Popup tracking reset");
+  console.log("All popup tracking reset, current scroll:", window.scrollY);
 }
 
 function forceTriggerPopupsAtCurrentPosition() {
   const currentScrollY = window.scrollY;
-  console.log("Force checking popups at:", currentScrollY);
+  console.log("Forcing popup check at position:", currentScrollY);
   
   let found = false;
-  const buffer = isMobile ? 1500 : 1000;
+  const buffer = isMobile ? 1500 : 1000; // Larger buffer on mobile
   
   let closestPopup = null;
   let closestDistance = Infinity;
@@ -1005,7 +1024,7 @@ function forceTriggerPopupsAtCurrentPosition() {
         found = true;
         
         if (!currentTextPopup) {
-          console.log("Showing popup:", item.id);
+          console.log("Found popup to show:", item.id, "at position:", item.triggerPosition);
           createTextPopup(item);
           shownTextPopups[item.id] = true;
         } else {
@@ -1018,27 +1037,29 @@ function forceTriggerPopupsAtCurrentPosition() {
   });
   
   if (!found && closestPopup && !currentTextPopup && closestDistance < 5000) {
-    console.log("Showing closest popup:", closestPopup.id);
+    console.log("No popup in range, showing closest popup:", closestPopup.id, 
+                "at distance:", closestDistance);
     createTextPopup(closestPopup);
     shownTextPopups[closestPopup.id] = true;
   }
 }
 
-// Resize handler
+// Mobile-optimized resize handler
 window.addEventListener('resize', function() {
+  // More reliable fullscreen detection for mobile
   const isFullscreenNow = isMobile ? 
     (window.innerHeight === screen.height) : 
     (window.innerWidth === screen.width && window.innerHeight === screen.height);
   
   if (isFullscreenNow !== isInFullscreen) {
-    console.log("Fullscreen detected via resize");
+    console.log("Detected fullscreen change via resize event");
     isInFullscreen = isFullscreenNow;
     forceResetAllPopups();
     setTimeout(forceTriggerPopupsAtCurrentPosition, 300);
   }
 });
 
-// Confirm dialog
+// Mobile-optimized Confirm dialog
 const Confirm = {
   open(options) {
     options = Object.assign({
@@ -1074,6 +1095,7 @@ const Confirm = {
     const cancelButton = confirmEl.querySelector('.confirm__button--cancel');
     const closeButton = confirmEl.querySelector('.confirm__close');
 
+    // Desktop events
     okButton.addEventListener('click', () => {
       options.onok();
       this._close(confirmEl);
@@ -1089,6 +1111,7 @@ const Confirm = {
       this._close(confirmEl);
     });
 
+    // Mobile touch events
     if (isMobile) {
       okButton.addEventListener('touchend', (e) => {
         e.preventDefault();
@@ -1130,7 +1153,7 @@ function redirectToNextPage() {
   window.location.href = "indexheart.html";
 }
 
-// Text popup definitions with mobile sizing
+// Mobile-optimized text popup definitions
 const textPopups = [
   {
     id: "higher", 
@@ -1224,10 +1247,11 @@ const textPopups = [
   }
 ];
 
-// Popup styles
+// Mobile-optimized popup styles
 function addPopupStyles() {
   const styleEl = document.createElement('style');
   styleEl.textContent = `
+    /* Mobile-optimized text popup styles */
     .text-popup-overlay {
       position: fixed;
       top: 0;
@@ -1260,6 +1284,7 @@ function addPopupStyles() {
       ${isMobile ? 'border-radius: 8px;' : ''}
     }
     
+    /* Mobile-optimized image popup styles */
     .image-popup {
       position: fixed;
       background: white;
@@ -1272,6 +1297,36 @@ function addPopupStyles() {
       animation: popup-appear 0.3s ease-out;
       overflow: hidden;
       ${isMobile ? 'border-radius: 8px;' : ''}
+    }
+    
+    .popup-titlebar {
+      background: #fffefe;
+      color: #000000;
+      padding: ${isMobile ? '10px' : '5px'};
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid #000000;
+    }
+    
+    .popup-title {
+      margin-left: ${isMobile ? '15px' : '10px'};
+      font-family: 'Times New Roman', Times, serif;
+      font-size: ${isMobile ? '18px' : '16px'};
+    }
+    
+    .popup-close {
+      background: none;
+      outline: none;
+      border: none;
+      font-size: ${isMobile ? '28px' : '24px'};
+      color: #000000;
+      cursor: pointer;
+      padding: ${isMobile ? '10px' : '5px'};
+      ${isMobile ? 'min-height: 44px; min-width: 44px;' : ''}
+      display: flex;
+      align-items: center;
+      justify-content: center;
     }
     
     .popup-content {
@@ -1322,6 +1377,16 @@ function addPopupStyles() {
       background: #e5e5e5;
     }
     
+    .image-popup .popup-content {
+      padding: 0;
+    }
+    
+    .image-popup .popup-content img {
+      max-width: 100%;
+      max-height: 100%;
+      display: block;
+    }
+    
     @keyframes overlay-appear {
       0% { opacity: 0; }
       100% { opacity: 1; }
@@ -1348,12 +1413,38 @@ function addPopupStyles() {
       visibility: hidden !important;
       pointer-events: none !important;
     }
+
+    /* Mobile-specific confirm dialog adjustments */
+    ${isMobile ? `
+    .confirm__window {
+      margin: 20px !important;
+      width: calc(100vw - 40px) !important;
+      max-width: 400px !important;
+    }
+    
+    .confirm__content {
+      font-size: 18px !important;
+      line-height: 1.4 !important;
+      padding: 20px !important;
+    }
+    
+    .confirm__buttons {
+      padding: 15px 20px !important;
+    }
+    
+    .confirm__button {
+      min-height: 44px !important;
+      font-size: 18px !important;
+      padding: 12px 20px !important;
+      margin: 0 5px !important;
+    }
+    ` : ''}
   `;
   
   document.head.appendChild(styleEl);
 }
 
-// Global state variables
+// Track popup states
 const shownTextPopups = {};
 const shownImagePopups = {};
 let currentTextPopup = null;
@@ -1363,9 +1454,10 @@ const openImagePopups = {};
 let isScrollDisabled = false;
 let lastScrollPosition = 0;
 let missedTextPopups = [];
+let originalPageHeightDisplay = '';
 let heightUpdateInterval = null;
 
-// Helper functions
+// Mobile-optimized helper functions
 function getCurrentHeightText() {
   const pixels = window.scrollY + window.innerHeight;
   const centimeters = (pixels / 96) * 2.54;
@@ -1375,10 +1467,9 @@ function getCurrentHeightText() {
 function disablePopupScroll() {
   if (isScrollDisabled) return;
   
+  // Stop auto scroll when popup opens
   if (isMobile) {
     stopAutoScroll();
-    // Keep auto-load running even during popups for endless feel
-    console.log("Popup opened, auto-scroll paused but auto-load continues");
   }
   
   const scrollY = window.scrollY;
@@ -1432,13 +1523,12 @@ function enablePopupScroll() {
     pageHeightDisplay.style.display = '';
   }
   
+  updatePageHeightDisplay();
+  
+  // Resume auto scroll after popup closes on mobile
   if (isMobile) {
     setTimeout(() => {
       startAutoScroll();
-      // Auto-load should already be running, but ensure it's active
-      if (!autoLoadInterval) {
-        startAutoLoad();
-      }
     }, AUTO_SCROLL_DELAY);
   }
 }
@@ -1476,12 +1566,14 @@ function showOriginalElement() {
   }
 }
 
+// Mobile-optimized content analysis
 function analyzeContent(html) {
   const textOnly = html.replace(/<[^>]*>/g, '');
   const lineBreaks = (html.match(/<br>/g) || []).length;
   const words = textOnly.split(/\s+/).length;
   const chars = textOnly.length;
   
+  // More conservative for mobile
   const charsPerLine = isMobile ? 30 : 50;
   const wordsPerLine = isMobile ? 5 : 8;
   
@@ -1521,18 +1613,14 @@ function analyzeContent(html) {
   };
 }
 
+// Mobile-optimized text popup creation
 function createTextPopup(textItem) {
-  console.log("Creating text popup:", textItem.id);
-  
   if (currentTextPopup) {
     closeTextPopup();
   }
   
   const element = document.getElementById(textItem.id);
-  if (!element) {
-    console.log("Element not found:", textItem.id);
-    return;
-  }
+  if (!element) return;
   
   const content = element.innerHTML;
   const style = window.getComputedStyle(element);
@@ -1548,6 +1636,7 @@ function createTextPopup(textItem) {
   
   let width, height, fontSizeReduction = 1.0, buttonEmoji = textItem.buttonText;
   
+  // Mobile-specific sizing logic
   if (isMobile) {
     width = Math.min(
       Math.max(350, contentAnalysis.width),
@@ -1559,9 +1648,19 @@ function createTextPopup(textItem) {
       window.innerHeight * 0.8
     );
     
+    // Less aggressive font reduction on mobile
     fontSizeReduction = contentAnalysis.isVeryComplex ? 0.9 : 0.95;
   } else {
-    if (textItem.customFit) {
+    // Desktop logic (same as before)
+    if (textItem.id === "more2") {
+      width = Math.min(1000, window.innerWidth * 0.95);
+      height = Math.min(800, window.innerHeight * 0.95);
+      fontSizeReduction = 0.9;
+    } else if (textItem.id.includes("more")) {
+      width = Math.min(900, window.innerWidth * 0.95);
+      height = Math.min(700, window.innerHeight * 0.95);
+      fontSizeReduction = 0.9;
+    } else if (textItem.customFit) {
       width = Math.min(
         Math.max(textItem.customFit.width * 1.5, contentAnalysis.width * 1.5),
         window.innerWidth * 0.95
@@ -1593,14 +1692,17 @@ function createTextPopup(textItem) {
     }
   }
   
+  // Ensure minimum dimensions
   const minWidth = isMobile ? 300 : 500;
   const minHeight = isMobile ? 250 : 400;
   width = Math.max(width, Math.min(minWidth, window.innerWidth * 0.7));
   height = Math.max(height, Math.min(minHeight, window.innerHeight * 0.6));
   
+  // Final bounds check
   width = Math.min(width, window.innerWidth * 0.98);
   height = Math.min(height, window.innerHeight * (isMobile ? 0.85 : 0.98));
   
+  // Add extra height for footer
   height += isMobile ? 70 : 60;
   
   hideOriginalElement(textItem.id);
