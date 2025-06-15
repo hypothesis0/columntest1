@@ -1,0 +1,181 @@
+
+/* Be cautious about 100vw */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box; /* Ensure consistent box sizing */
+  }
+  
+  /* Prevent overflow */
+  html, body {
+    width: 100%;
+    overflow-x: hidden;  /* Prevent horizontal scrolling */
+  }
+.confirm {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    width: 50%; /* Adjust the width as needed */
+    height: auto; /* Let the height adjust based on content */
+    background: rgba(255, 255, 255, 0);
+    padding: 10px;
+    box-sizing: border-box;
+    z-index: 1000;
+    opacity: 0;
+    animation-name: confirm---open;
+    animation-duration: 0.2s;
+    animation-fill-mode: forwards;
+    font-family: 'Times New Roman', Times, serif;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transform: translate(-50%, -50%); /* Center the window */
+}
+
+.confirm--close {
+    animation-name: confirm---close;
+
+}
+
+.confirm__window {
+    width: 100%;
+    max-width: 1000px;
+    background: #ffffff;
+    font-size: 14px;
+   
+    border: 1px solid #000000; /* Add a black border */
+    /* border-radius: 5px; */
+    overflow: hidden;
+    /* box-shadow: 0 0 10px rgba(0, 0, 0, 0.3); */
+    font-family: 'Times New Roman', Times, serif;
+    opacity: 0;
+    transform: scale(0.75);
+    animation-name: confirm__window---open;
+    animation-duration: 0.2s;
+    animation-fill-mode: forwards;
+    animation-delay: 0.2s;
+}
+
+.confirm__titlebar,
+.confirm__content,
+.confirm__buttons {
+  
+    padding: 1em;
+}
+
+.confirm__titlebar {
+    background: #fffefe;
+    color: #000000;
+    line-height: 0.7em;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid #000000;
+}
+
+.confirm__title {
+    /* font-weight: bold; */
+    font-family: 'Times New Roman', Times, serif;
+    font-size: 1em;
+}
+
+.confirm__close {
+    font-family: 'Times New Roman', Times, serif;
+    background: none;
+    outline: none;
+    border: none;
+    transform: scale(2.5);
+    color: #000000;
+    transition: color 0.15s;
+}
+
+.confirm__close:hover {
+    color: #ffffff;
+    cursor: pointer;
+}
+
+.confirm__content {
+    line-height: 2em;
+    font-family: 'Times New Roman', Times, serif;
+}
+
+.confirm__buttons {
+    background: #dccdcd;
+   
+    display: flex;
+    justify-content: flex-end;
+    
+
+    /* padding: 0.8em 1.2em; */
+  
+    background: #ffffff;
+    color: solid #000000;
+    font-family: 'Times New Roman', Times, serif;
+    /* font-weight: bold; */
+    font-size: 1em;
+    gap: 1em; 
+    margin-left: 0.9em;
+    cursor: pointer;
+    outline: none;
+}
+
+.confirm__button {
+    background: #eeeeee;
+   
+    display: flex;
+    justify-content: flex-end;
+    border: 1px solid #000000; 
+
+    padding: 0.3em 0.5em; 
+    background: #ffffff;
+    color: solid #000000;
+    font-family: 'Times New Roman', Times, serif;
+    cursor: pointer;
+    outline: none;
+}
+
+.confirm__button--fill {
+    background: #ffffff;
+    color: #333333;
+}
+
+.confirm__button:focus {
+    box-shadow: 0 0 30px rgba(0, 0, 0, 0.5);
+}
+
+@keyframes confirm---open {
+    from { opacity: 0 }
+    to { opacity: 1 }
+}
+
+@keyframes confirm---close {
+    from { opacity: 1 }
+    to { opacity: 0 }
+}
+
+@keyframes confirm__window---open {
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+#confirmDialog {
+    display: none; /* Hidden initially */
+}
+
+.dynamic-heart {
+    font-size: 1.5rem;
+    position: fixed;
+    pointer-events: none;
+    animation: float 5s linear infinite;
+  }
+  
+  /* Style for fireworks (heart particles) */
+  .firework {
+    position: fixed;
+    font-size: 1.5rem; /* Adjust size for visibility */
+    pointer-events: none;
+    opacity: 1; /* Start fully visible */
+    transition: opacity 1s ease-out;
+  }

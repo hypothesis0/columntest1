@@ -1,0 +1,100 @@
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Endless Roman Column</title>
+<style>
+  
+
+
+    .dynamic-image {    
+        left: 48%;
+        transform: translateX(450%);
+        width: 10%;
+        display: block;
+        opacity: 0;
+        z-index: 1;
+    }
+    
+    .dynamic-heart {
+        position: absolute;
+        font-size: 16px; /* Adjust the size of the hearts */
+        z-index:20;
+        opacity: 0;
+        /* Add more styles or animations as needed */
+    }
+    #pageHeightDisplay {
+        position: fixed;
+        bottom: 10px; /* Distance from the bottom of the viewport */
+        right: 10px; /* Distance from the right of the viewport */
+        background-color: white; /* Background color for visibility */
+        padding: 5px; /* Padding around the text */
+        border: 1px solid #ddd; /* Optional: adds a border */
+        z-index: 1001; /* Ensures it stays above other content */
+        opacity: 0; /* Optional: makes the background slightly transparent */
+    }
+
+
+#scrollForLove {
+    position: absolute; /* Make sure it doesn't affect the positioning of other fixed elements */
+ 
+  
+}
+#soundModal {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(255, 255, 255, 0.8);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 1000;
+    }
+
+    #enableSoundBtn {
+    background-color: #ffffff;  /* Change to your desired color */
+    color: rgb(0, 0, 0);                /* Text color */
+    /* Rounded corners */
+    font-size: 1em;  
+    font-family: 'Times New Roman', Times, serif;        /* Adjust font size */
+    cursor: pointer;             /* Show pointer cursor on hover */
+    transition: background-color 0.3s ease;  /* Smooth hover effect */
+    z-index:999;
+    padding: 0.3em 0.5em; 
+    background: #ffffff;
+    color: solid #000000;
+    font-family: 'Times New Roman', Times, serif;
+}
+    /* Style for the button inside the modal */
+    #soundImage {
+    position: absolute;
+    width: 110vh;   /* Adjust as needed */
+    height: auto;
+    z-index: 1;  /* Place the image behind the button */
+  }
+
+
+
+</style>
+</head>
+<body>
+<!-- Modal HTML (Place in your HTML body) -->
+<!-- Modal HTML (Place in your HTML body) -->
+<div id="soundModal">
+    <!-- <img id="soundImage" src="columnfall.jpg" alt="Background Image"> -->
+    <button id="enableSoundBtn">💛</button>
+  </div>
+
+  
+  
+
+
+    <div id="pageHeightDisplay">column height: 0 cm</div>
+
+<script src="sketchwithheart.js"></script>
+
+
+</body>
+</html>
