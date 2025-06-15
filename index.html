@@ -21,7 +21,7 @@
             /* font: arial; */
             bottom: 10px; /* Distance from the bottom of the viewport */
             right: 10px; /* Distance from the right of the viewport */
-            background-color: white; /* Background color for visibility */
+            background-color: transparent; /* Background color for visibility */
             padding: 5px; /* Padding around the text */
             border: 1px solid #ddd; /* Optional: adds a border */
             z-index: 1001; /* Ensures it stays above other content */
@@ -45,21 +45,21 @@
             transform: translateX(1200%);
             width: 4vw;
             display: block;
-            z-index: 5;
+            z-index: 5000;
         }
 
         /* Mobile-specific column adjustments */
         @media (max-width: 768px) {
             .dynamic-image {
                 width: 12vw;        /* Mobile width */
-                transform: translateX(460%);  /* Mobile positioning */
+                transform: translateX(370%);  /* Mobile positioning */
                 display: block;
-                z-index: 5;
+                z-index: 5000;
                 
                 /* Fix iPhone overlapping */
                 margin: 0;
                 padding: 0;
-                vertical-align: top;
+               
                 line-height: 0;
             }
             
