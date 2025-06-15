@@ -48,14 +48,29 @@
             z-index: 5;
         }
 
+        /* Mobile-specific column adjustments */
         @media (max-width: 768px) {
-    .dynamic-image {
-        width: 10vw;        /* ← Change this number for mobile width! */
-        transform: translateX(480%);  /* ← Change scale(2) for mobile size! */
-        display: block;
-        z-index: 5;
-    }
-}
+            .dynamic-image {
+                width: 10vw;        /* Mobile width */
+                transform: translateX(480%);  /* Mobile positioning */
+                display: block;
+                z-index: 5;
+                
+                /* Fix iPhone overlapping */
+                margin: 0;
+                padding: 0;
+                vertical-align: top;
+                line-height: 0;
+            }
+            
+            /* Ensure body has proper spacing on mobile */
+            body {
+                line-height: 0;
+                margin: 0;
+                padding: 0;
+            }
+        }
+
 
     </style>
 </head>
@@ -163,11 +178,8 @@
                 img.alt = "Dynamic Image";
                 img.classList.add("dynamic-image");
                 
-                // Make column images 4x larger on mobile
-                if (isMobile) {
-                    img.style.transform = 'scale(4)';
-                    img.style.transformOrigin = 'center';
-                }
+                // Remove the JavaScript mobile scaling - let CSS handle it
+                // No more JavaScript transform overrides
                 
                 return img;
             }
