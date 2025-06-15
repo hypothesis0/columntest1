@@ -8,8 +8,10 @@ const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/
 // Auto-scroll variables for mobile
 let autoScrollEnabled = false;
 let autoScrollInterval = null;
+let autoLoadInterval = null;
 let lastUserInteraction = 0;
 const AUTO_SCROLL_DELAY = 3000; // 3 seconds
+const AUTO_LOAD_INTERVAL = 2000; // Add new images every 2 seconds
 
 console.log("Mobile detected:", isMobile);
 
@@ -92,6 +94,13 @@ function setupMobileFeatures() {
     console.log("Initiating auto-scroll");
     startAutoScroll();
   }, AUTO_SCROLL_DELAY);
+  
+  // Auto-load setup - continuously add images
+  console.log("Starting auto-load setup...");
+  setTimeout(() => {
+    console.log("Initiating auto-load");
+    startAutoLoad();
+  }, 1000); // Start auto-loading after 1 second
 }
 
 // Mobile touch handlers
@@ -189,6 +198,51 @@ function stopAutoScroll() {
     autoScrollInterval = null;
   }
   autoScrollEnabled = false;
+}
+
+// Auto-loading functions for infinite content
+function startAutoLoad() {
+  if (autoLoadInterval) {
+    console.log("Auto-load already running");
+    return;
+  }
+  
+  console.log("Starting auto-load");
+  
+  autoLoadInterval = setInterval(() => {
+    // Always add images regardless of scroll position or user interaction
+    // This creates truly endless content
+    
+    // Add images at the bottom more frequently
+    addImage();
+    
+    // Occasionally add at the top too for even more endless feel
+    if (Math.random() < 0.3) { // 30% chance
+      addImageTop();
+    }
+    
+    // Add multiple images sometimes for faster loading
+    if (Math.random() < 0.2) { // 20% chance to add extra
+      addImage();
+    }
+    
+    console.log("Auto-loaded new images, page height:", document.body.offsetHeight);
+    
+  }, AUTO_LOAD_INTERVAL);
+}
+
+function stopAutoLoad() {
+  if (autoLoadInterval) {
+    console.log("Stopping auto-load");
+    clearInterval(autoLoadInterval);
+    autoLoadInterval = null;
+  }
+}
+
+function pauseAutoLoad() {
+  // Auto-load continues even during user interaction
+  // This ensures the page is always growing
+  console.log("Auto-load continues during interaction");
 }
 
 // Reset all popups
@@ -711,13 +765,17 @@ document.addEventListener("DOMContentLoaded", () => {
     document.body.appendChild(audioPlayer);
   }
 
-  // Scroll event listener
+  // Scroll event listener with auto-loading
   window.addEventListener("scroll", () => {
     const scrollBottom = window.innerHeight + window.scrollY >= document.body.offsetHeight - 50;
     const scrollTop = window.scrollY <= 50;
 
+    // Traditional loading when user scrolls (still keep this as backup)
     if (scrollBottom) {
       addImage();
+      // Add extra images when user reaches bottom
+      addImage();
+      console.log("User reached bottom, added extra images");
     } else if (scrollTop) {
       addImageTop();
     }
@@ -725,6 +783,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (window.scrollY >= 185000 && !dialogShown) {
       if (isMobile) {
         stopAutoScroll();
+        stopAutoLoad(); // Stop auto-loading when dialog appears
       }
       
       disableScroll();
@@ -746,6 +805,7 @@ document.addEventListener("DOMContentLoaded", () => {
           if (isMobile) {
             setTimeout(() => {
               startAutoScroll();
+              startAutoLoad(); // Resume auto-loading after dialog
             }, AUTO_SCROLL_DELAY);
           }
         }
@@ -1317,6 +1377,8 @@ function disablePopupScroll() {
   
   if (isMobile) {
     stopAutoScroll();
+    // Keep auto-load running even during popups for endless feel
+    console.log("Popup opened, auto-scroll paused but auto-load continues");
   }
   
   const scrollY = window.scrollY;
@@ -1373,6 +1435,10 @@ function enablePopupScroll() {
   if (isMobile) {
     setTimeout(() => {
       startAutoScroll();
+      // Auto-load should already be running, but ensure it's active
+      if (!autoLoadInterval) {
+        startAutoLoad();
+      }
     }, AUTO_SCROLL_DELAY);
   }
 }
